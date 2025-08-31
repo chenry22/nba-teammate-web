@@ -23,23 +23,6 @@ class TeammateWebSpider(scrapy.Spider):
         "https://www.basketball-reference.com/leagues/NBA_2025_per_game.html",
     ]
 
-    # item format:
-    #   href: /players/g/gilgesh01.html
-    #   name: Shai Gilgeous-Alexander
-    #   teams: [
-    #      { year: 2018-19, team: LAC, games_played: 82, games_started: 73,
-    #        minutes: 2174, win_shares: 3.3, win_shares_per_48: .074, box_plus_minus: -0.5 }, 
-    #      ...
-    #      { year: 2024-25, team: OKC, games_played: 76, games_started: 76, ... }
-    #    ]
-
-    # item format:
-    #   year: 2018-19
-    #   teammates: [
-    #       { player_1: /players/g/gilgesh01.html, player_2: /players/g/gallida01.html, minutes_played: 1374:56, plus_minus: 0.9 }
-    #       ...
-    #       { player_1: /players/g/gilgesh01.html, player_2: players/s/scottmi01.html, minutes_played: 252:56, plus_minus: 0.6 }
-    #   ]
 
     # this is the default url response handler
     def parse(self, response):
@@ -73,7 +56,8 @@ class TeammateWebSpider(scrapy.Spider):
         title = lineup_div.xpath("//p[contains(text(), 'Player lineups')]")
         lineup_links = set(title.xpath('following-sibling::ul').css("li a::attr(href)").getall())
         # yield response.follow(lineup_links.pop(), callback=self.parse_lineup)
-        yield from response.follow_all(lineup_links, callback=self.parse_lineup)
+        # im going to use nba api instead, so dont worry about this
+        # yield from response.follow_all(lineup_links, callback=self.parse_lineup)
         
     # get teammate data from the current year
     def parse_lineup(self, response):
