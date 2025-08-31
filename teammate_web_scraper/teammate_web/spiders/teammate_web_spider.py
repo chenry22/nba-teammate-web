@@ -10,8 +10,8 @@ from scrapy import Selector
 
 class TeammateWebSpider(scrapy.Spider):
     name = "teammates"
-    player_start = 143 # bball ref rank num to start at
-    batch_size = 20 # number of players to parse in a given iteration
+    player_start = 493 # bball ref rank num to start at
+    batch_size = 50 # number of players to parse in a given iteration
 
     # "Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36"
     user_agent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
