@@ -10,3 +10,6 @@ web_app/package-lock.json
 web_app/dist
 
 lineup_scraper/tmp.csv
+
+pyvis_scripts/index.html
+pyvis_scripts/lib
