@@ -40,7 +40,7 @@ playerData.forEach(n => {
             var val = weighted_gp + Math.max(Number(n.win_shares), 1.0) / 2.8;
             graph.addNode(n.id, { 
                 label: n.player, color: teams[n.team], 
-                size: Math.min(0.5 + val, 8),
+                size: Math.min(1 + val, 8),
                 x: Math.random(), y: Math.random()
             });
         }
@@ -144,7 +144,7 @@ renderer.setSetting("edgeReducer", (edge, data) => {
     if (selectedNode) {
         let nodes = graph.extremities(edge)
         if(!nodes.every((n) => n === selectedNode || graph.areNeighbors(n, selectedNode))){
-            data.color = "#c9c9c981";
+            data.color = "#d6d5d5d3";
             data.zIndex = 1;
         } else if (nodes[0] !== selectedNode && nodes[1] !== selectedNode ) {
             data.color = "#c9c9c9d7";
