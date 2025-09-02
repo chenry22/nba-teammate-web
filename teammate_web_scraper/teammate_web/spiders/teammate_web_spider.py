@@ -1,23 +1,14 @@
 import scrapy
 from scrapy import Selector
-
-# there may or may not be a good way to find # of games played together in a season
-#   RealGM has a sort of thing, but it's kind of hard to work w and also doesn't filter by season 
-#   Like it is just conglomerated, which doesn't super help
-
-# problems that are going to occur -> supersonics relocation (SEA = OKC)
-# perhaps CHA as well with bobcats, hornet, whatever
+from nba_api.stats.static import players
 
 class TeammateWebSpider(scrapy.Spider):
     name = "teammates"
-    player_start = 493 # bball ref rank num to start at
-    batch_size = 50 # number of players to parse in a given iteration
+    # player_start = 0 # bball ref rank num to start at
+    # batch_size = 50 # number of players to parse in a given iteration
 
-    # "Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36"
+    # this is still kind of finnicky, but worked best out of everything I tried
     user_agent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
-    # "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    # "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
-
     start_urls = [
         # main page with player table
         "https://www.basketball-reference.com/leagues/NBA_2025_per_game.html",
@@ -36,7 +27,8 @@ class TeammateWebSpider(scrapy.Spider):
                 player_links.append(link)
                 prev = link
         # yield response.follow(player_links.pop(), callback=self.parse_player)
-        yield from response.follow_all(player_links[(self.player_start - 1) : (self.player_start - 1 + self.batch_size)], callback=self.parse_player)
+        # yield from response.follow_all(player_links[(self.player_start - 1) : (self.player_start - 1 + self.batch_size)], callback=self.parse_player)
+        yield from response.follow_all(player_links, callback=self.parse_player)
 
     # get all teams played with, then req through lineup pages
     def parse_player(self, response):
@@ -44,17 +36,22 @@ class TeammateWebSpider(scrapy.Spider):
         for row in stats_table:
             # ignore 2TM since this is just a conglomeration of data that we already scrape
             if not row.xpath("./td[@data-stat='team_name_abbr']").css('a::text').get() is None:
+                name = response.css("div#meta span::text").get()
+                p_id = players.find_players_by_full_name(name)
                 yield {
-                    "player" : response.css("div#meta span::text").get(), "href" : response.request.url.split(".com")[1],
-                    "year" : row.css("th a::text").get(), "team" : row.xpath("./td[@data-stat='team_name_abbr']").css('a::text').get(), 
-                    "games_played" : row.xpath("./td[@data-stat='games']//text()").get(), "games_started" : row.xpath("./td[@data-stat='games_started']//text()").get(), 
-                    "minutes_played" : row.xpath("./td[@data-stat='mp']//text()").get(), "win_shares" : row.xpath("./td[@data-stat='ws']//text()").get(), 
-                    "win_shares_per_48" : row.xpath("./td[@data-stat='ws_per_48']//text()").get(), "box_plus_minus" : row.xpath("./td[@data-stat='bpm']//text()").get()
+                    "player" : name, "id" : p_id[0]['id'] if len(p_id) > 0 else "---",
+                    "year" : row.css("th a::text").get(), 
+                    "team" : row.xpath("./td[@data-stat='team_name_abbr']").css('a::text').get(), 
+                    "games_played" : row.xpath("./td[@data-stat='games']//text()").get(), 
+                    "games_started" : row.xpath("./td[@data-stat='games_started']//text()").get(), 
+                    "minutes_played" : row.xpath("./td[@data-stat='mp']//text()").get(), 
+                    "win_shares" : row.xpath("./td[@data-stat='ws']//text()").get(), 
+                    "box_plus_minus" : row.xpath("./td[@data-stat='bpm']//text()").get()
                 }
 
-        lineup_div = response.css("div#inner_nav ul li.full")
-        title = lineup_div.xpath("//p[contains(text(), 'Player lineups')]")
-        lineup_links = set(title.xpath('following-sibling::ul').css("li a::attr(href)").getall())
+        # lineup_div = response.css("div#inner_nav ul li.full")
+        # title = lineup_div.xpath("//p[contains(text(), 'Player lineups')]")
+        # lineup_links = set(title.xpath('following-sibling::ul').css("li a::attr(href)").getall())
         # yield response.follow(lineup_links.pop(), callback=self.parse_lineup)
         # im going to use nba api instead, so dont worry about this
         # yield from response.follow_all(lineup_links, callback=self.parse_lineup)

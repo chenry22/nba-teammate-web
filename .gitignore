@@ -1,3 +1,12 @@
 .DS_Store
 *.pyc
-teammate_web_data.json
+/data/*.json
+/data/lineups
+/data/*.csv
+__pycache__/
+
+web_app/node_modules
+web_app/package-lock.json
+web_app/dist
+
+lineup_scraper/tmp.csv
