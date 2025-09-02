@@ -33,4 +33,4 @@ for year in years:
     print("Completed year " + year)
 
 df = pd.concat(data, ignore_index=True)
-df.to_csv("two_man_lineups.csv", index=False)
+df.to_csv("lineups_2025_08.csv", index=False)
