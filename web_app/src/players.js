@@ -25,7 +25,8 @@ import lineups08 from "./data/lineups/2007-08.json";
 const paramsString = window.location.search;
 const searchParams = new URLSearchParams(paramsString);
 const playerID = Number(searchParams.get('id'));
-var min_minutes = searchParams.has('mins') ? Number(searchParams.get('mins')) : 50.0;
+var min_minutes = searchParams.has('mins') ? Math.max(Number(searchParams.get('mins')), 1) : 50.0;
+var depth = searchParams.has('depth') ? Math.min(Math.max(Number(searchParams.get('depth')), 4), 1) : 1;
 
 const lineups = [lineups25, lineups24, lineups23, lineups22, lineups21, lineups20,
     lineups19, lineups18, lineups17, lineups16, lineups15, 
@@ -70,24 +71,56 @@ const settings = {
 const layout = new FA2Layout(graph, { settings });
 layout.start();
 
-function addTeammate(e, pid) {
-    var otherID = Number(e.player1) === pid ? Number(e.player2) : Number(e.player1);
-    if((Number(e.player1) === pid || Number(e.player2) === pid) && sumMinutes[Number(otherID)] >= min_minutes ){
+function addOrUpdateTeammateNode(id, label, team, val) {
+    if(!graph.hasNode(id)) {
+        graph.addNode(id, { 
+            label: names[id] ? names[id] : label, 
+            size: Math.min(2.5 + val, 12), color: teams[team],
+            x: Math.random(), y: Math.random(), 
+        });
+    } else {
+        graph.updateNode(id, attr => {
+            return { ...attr, size: Math.min(attr.size + val, 12) };
+        });
+    }
+}
+function addTeammate(e, show) {
+    var otherID = Number(e.player1) === playerID ? Number(e.player2) : Number(e.player1);
+    if((show.has(Number(e.player1)) || show.has(Number(e.player2))) &&
+        (
+            (show.size === 1 && sumMinutes[Number(otherID)] >= min_minutes) ||
+            (show.size > 1 && e.min > min_minutes)
+        )
+    ){
+        console.log(e);
         var team = e.team
         if(e.team === 'BKN'){ team = 'BRK'; }
         else if(e.team === 'CHO'){ team = 'CHA'; }
         else if(e.team === 'PHX'){ team = 'PHO'; }
 
         var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 2500.0
-        if(!graph.hasNode(otherID)) {
-            graph.addNode(otherID, { 
-                label: names[otherID] ? names[otherID] : e.label, 
-                size: Math.min(2.5 + val, 12), color: teams[team],
-                x: Math.random(), y: Math.random(), 
+        if(show.size > 1){
+            addOrUpdateTeammateNode(e.player1, e.label, team, val);
+            addOrUpdateTeammateNode(e.player2, e.label, team, val);
+            if(!graph.hasNode(team)) {
+                graph.addNode(team, { 
+                    label: team, size: 5.0, color: teams[team],
+                    x: Math.random(), y: Math.random(), 
+                });
+            }
+            graph.addEdge(e.player1, team, { 
+                color : team_to_color[team],
+                size : Math.min(Math.max(val, 0.5), 4)
+            });
+            graph.addEdge(e.player2, team, { 
+                color : team_to_color[team],
+                size : Math.min(Math.max(val, 0.5), 4)
             });
         } else {
-            graph.updateNode(otherID, attr => {
-                return { ...attr, size: Math.min(attr.size + val, 12) };
+            addOrUpdateTeammateNode(otherID, e.label, team, val);
+            graph.addEdge(otherID, team, { 
+                color : team_to_color[team],
+                size : Math.min(Math.max(val, 0.5), 4)
             });
         }
         
@@ -95,10 +128,6 @@ function addTeammate(e, pid) {
         graph.addEdge(e.player1, e.player2, { 
             color : team_to_color[e.team], 
             label : "GP: " + e.gp + ", GS: " + e.gs,
-            size : Math.min(Math.max(val, 0.5), 4)
-        });
-        graph.addEdge(otherID, team, { 
-            color : team_to_color[team],
             size : Math.min(Math.max(val, 0.5), 4)
         });
     }
@@ -121,6 +150,23 @@ function createNewNetwork() {
         size: 26, highlighted: true,
         x: Math.random(), y: Math.random()
     });
+
+    var i = depth;
+    var shown = new Set([playerID]);
+    while(i > 1){
+        var toAdd = new Set();
+        lineups.forEach(pairings => {
+            pairings.forEach(e => {
+                if(shown.has(Number(e.player1)) || shown.has(Number(e.player2)) && Number(e.min) > min_minutes){
+                    toAdd.add(Number(e.player1));
+                    toAdd.add(Number(e.player2));
+                }
+            });
+        });
+        shown = shown.union(toAdd);
+        i--;
+    }
+    console.log(shown);
 
     playerData.forEach(n => {
         if(n.id === playerID) {
@@ -152,7 +198,7 @@ function createNewNetwork() {
 
     // g othrough each file and year
     lineups.forEach(pairings => {
-        pairings.forEach(e => addTeammate(e, playerID));
+        pairings.forEach(e => addTeammate(e, shown));
     })
 }
 
@@ -189,7 +235,14 @@ document.getElementById('min-slider').addEventListener('input', e => {
 })
 document.getElementById('apply-filters').addEventListener('click', e => {
     searchParams.set("mins", min_minutes);
+    searchParams.set("depth", depth);
     createNewNetwork();
+})
+// DEPTH
+document.getElementById('depth-slider').setAttribute('value', depth);
+document.getElementById('depth-slider').addEventListener('input', e => {
+    depth = e.target.value;
+    document.getElementById('depth-label').innerText = `Depth: ${depth}`;
 })
 
 
