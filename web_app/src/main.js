@@ -65,7 +65,7 @@ lineupData.forEach(e => {
 const settings = {
     gravity: 1.1, strongGravityMode: true,
     adjustSizes: true,
-    scalingRatio: 15, slowDown: 2.2
+    scalingRatio: 15, slowDown: 1
 };
 const layout = new FA2Layout(graph, { settings });
 layout.start();

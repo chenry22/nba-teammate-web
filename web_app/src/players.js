@@ -25,8 +25,13 @@ import lineups08 from "./data/lineups/2007-08.json";
 const paramsString = window.location.search;
 const searchParams = new URLSearchParams(paramsString);
 const playerID = Number(searchParams.get('id'));
+var min_minutes = searchParams.has('mins') ? Number(searchParams.get('mins')) : 50.0;
 
-const min_minutes = 20.0;
+const lineups = [lineups25, lineups24, lineups23, lineups22, lineups21, lineups20,
+    lineups19, lineups18, lineups17, lineups16, lineups15, 
+    lineups14, lineups13, lineups12, lineups11, lineups10, 
+    lineups09, lineups08
+];
 const teams = {
     "MIA" : "#98002e", "LAL" : "#552583", "BOS" : "#007a33", "LAC" : "#c8102e", "BRK" : "#000000",
     "CHO" : "#00788c", "CHI" : "#ce1141", "ATL" : "#e03a3e", "PHO" : "#e56020", "DAL" : "#00538c", 
@@ -34,7 +39,7 @@ const teams = {
     "MEM" : "#5d76a9", "MIL" : "#00471b", "MIN" : "#0c2340", "NOP" : "#85714d", "NYK" : "#f58426",
     "OKC" : "#007ac1", "ORL" : "#0077c0", "PHI" : "#006bb6", "POR" : "#e03a3e", "SAC" : "#5a2d81", 
     "SAS" : "#a5a7a8ff", "TOR" : "#ce1141", "UTA" : "#002b5c", "CLE" : "#860038", "WAS" : "#002b5c",
-}
+};
 const team_to_color = {
     "MIA" : "#c10c42e0", "LAL" : "#6e399fe0", "BOS" : "#099a45e0", "LAC" : "#e82042e0", "BRK" : "#000000e0",
     "CHO" : "#0595aee0", "CHI" : "#db2150e0", "ATL" : "#f14e50e0", "PHO" : "#f96d2ce0", "DAL" : "#0a65a2e0", 
@@ -45,89 +50,113 @@ const team_to_color = {
     "CHA" : "#058fa8e0", "PHX" : "#fa844ee0", "BKN" : "#525252e0"
 }
 var names = {};
+var sumMinutes = {};
+lineups.forEach(year => {
+    year.forEach(e => {
+        if(Number(e.player1) === playerID || Number(e.player2) === playerID) {
+            var otherID = Number(e.player1) === playerID ? Number(e.player2) : Number(e.player1);
+            sumMinutes[otherID] = Number(e.min) + (sumMinutes[otherID] ? sumMinutes[otherID] : 0);
+        }
+    });
+});
+playerData.forEach(p => { names[p.id] = p.player; });
 
 const graph = new Graph({ multi: true });
-graph.addNode(playerID, { 
-    label: playerID, size: 24,
-    x: Math.random(), y: Math.random()
-});
-
-playerData.forEach(n => {
-    if(n.id === playerID) {
-        graph.updateNode(playerID, attr => {
-            return { ...attr, label: n.player, color: teams[n.team] };
-        })
-
-        var weighted_gp = ((Number(n.games_played) / 2.0) + Number(n.games_started)) / 100.0
-        if(!graph.hasNode(n.team)) {
-            var val = weighted_gp + Math.max(Number(n.win_shares), 1.0) / 2.8;
-            graph.addNode(n.team, { 
-                label: n.team, color: teams[n.team], 
-                size: 10.0 + val,
-                x: Math.random(), y: Math.random()
-            });
-        }
-
-        var team_val = 0.5 * weighted_gp * Math.max(Number(n.win_shares), 1.0) * Math.max(Number(n.box_plus_minus), 1.0);
-        graph.addEdge(n.id, n.team, {
-            color: team_to_color[n.team],
-            size: Math.min(Math.max(team_val, 0.1), 5)
-        });
-    } else {
-        names[n.id] = n.player;
-    }
-});
-
-function addTeammate(e) {
-    if(Number(e.min) >= min_minutes && (Number(e.player1) === playerID || Number(e.player2) === playerID)){
-        var otherID = Number(e.player1) === playerID ? Number(e.player2) : Number(e.player1);
-        var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 1500.0
-        if(!graph.hasNode(otherID)) {
-            graph.addNode(otherID, { 
-                label: names[otherID] ? names[otherID] : e.label, 
-                size: 4 + val, color: teams[e.team],
-                x: Math.random(), y: Math.random(), 
-            });
-        }
-
-        graph.addEdge(e.player1, e.player2, { 
-            color : team_to_color[e.team], 
-            label : "GP: " + e.gp + ", GS: " + e.gs,
-            size : Math.min(Math.max(val, 0.1), 3.5)
-        });
-        graph.addEdge(otherID, e.team, { 
-            color : team_to_color[e.team],
-            size : 1.0
-        });
-    }
-}
-lineups25.forEach(e => addTeammate(e));
-lineups24.forEach(e => addTeammate(e));
-lineups23.forEach(e => addTeammate(e));
-lineups22.forEach(e => addTeammate(e));
-lineups21.forEach(e => addTeammate(e));
-lineups20.forEach(e => addTeammate(e));
-lineups19.forEach(e => addTeammate(e));
-lineups18.forEach(e => addTeammate(e));
-lineups17.forEach(e => addTeammate(e));
-lineups16.forEach(e => addTeammate(e));
-lineups15.forEach(e => addTeammate(e));
-lineups14.forEach(e => addTeammate(e));
-lineups13.forEach(e => addTeammate(e));
-lineups12.forEach(e => addTeammate(e));
-lineups11.forEach(e => addTeammate(e));
-lineups10.forEach(e => addTeammate(e));
-lineups09.forEach(e => addTeammate(e));
-lineups08.forEach(e => addTeammate(e));
-
 const settings = {
-    gravity: 2, adjustSizes: true,
-    edgeWeightInfluence: 1,
-    scalingRatio: 10, slowDown: 4
+    gravity: 1.85, adjustSizes: true,
+    edgeWeightInfluence: 0.5,
+    scalingRatio: 9, slowDown: 5
 };
 const layout = new FA2Layout(graph, { settings });
 layout.start();
-// forceAtlas2.assign(graph, { iterations: 200, settings });
+
+function addTeammate(e, pid) {
+    var otherID = Number(e.player1) === pid ? Number(e.player2) : Number(e.player1);
+    if((Number(e.player1) === pid || Number(e.player2) === pid) && sumMinutes[Number(otherID)] >= min_minutes ){
+        var team = e.team
+        if(e.team === 'BKN'){ team = 'BRK'; }
+        else if(e.team === 'CHO'){ team = 'CHA'; }
+        else if(e.team === 'PHX'){ team = 'PHO'; }
+
+        var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 2500.0
+        if(!graph.hasNode(otherID)) {
+            graph.addNode(otherID, { 
+                label: names[otherID] ? names[otherID] : e.label, 
+                size: Math.min(2.5 + val, 12), color: teams[team],
+                x: Math.random(), y: Math.random(), 
+            });
+        } else {
+            graph.updateNode(otherID, attr => {
+                return { ...attr, size: Math.min(attr.size + val, 12) };
+            });
+        }
+        
+        val *= 2;
+        graph.addEdge(e.player1, e.player2, { 
+            color : team_to_color[e.team], 
+            label : "GP: " + e.gp + ", GS: " + e.gs,
+            size : Math.min(Math.max(val, 0.5), 4)
+        });
+        graph.addEdge(otherID, team, { 
+            color : team_to_color[team],
+            size : Math.min(Math.max(val, 0.5), 4)
+        });
+    }
+}
+
+function createNewNetwork() {
+    graph.clear();
+    if(!names[playerID]) {
+        console.log("Player ID not found.");
+        graph.addNode(playerID, { 
+            label: "PLAYER NOT FOUND.", size: 50,
+            x: Math.random(), y: Math.random()
+        });
+        document.getElementById("physics_toggler").innerText = "Toggle Physics (Disabled)"
+        layout.stop();
+        return;
+    }
+
+    graph.addNode(playerID, { 
+        size: 26, highlighted: true,
+        x: Math.random(), y: Math.random()
+    });
+
+    playerData.forEach(n => {
+        if(n.id === playerID) {
+            graph.updateNode(playerID, attr => {
+                return { ...attr, label: n.player, color: teams[n.team] };
+            })
+
+            var weighted_gp = ((Number(n.games_played) / 2.0) + Number(n.games_started)) / 200.0
+            var val = weighted_gp + Math.max(Number(n.win_shares), 1.0) / 4;
+            if(!graph.hasNode(n.team)) {
+                graph.addNode(n.team, { 
+                    label: n.team, color: teams[n.team], 
+                    size: Math.min(4 + val, 20),
+                    x: Math.random(), y: Math.random()
+                });
+            } else {
+                graph.updateNode(n.team, attr => {
+                    return { ...attr, size: Math.min(attr.size + val, 20) };
+                })
+            }
+
+            var team_val =  weighted_gp * Math.max(Number(n.win_shares), 1.0) * Math.max(Number(n.box_plus_minus), 1.0);
+            graph.addEdge(n.id, n.team, {
+                color: team_to_color[n.team],
+                size: Math.min(Math.max(team_val, 0.1), 5)
+            });
+        }
+    });
+
+    // g othrough each file and year
+    lineups.forEach(pairings => {
+        pairings.forEach(e => addTeammate(e, playerID));
+    })
+}
+
+createNewNetwork();
 const renderer = new Sigma(graph, document.getElementById("container"));
 renderer.setSetting('zIndex', true);
 
@@ -146,6 +175,23 @@ document.getElementById("close-button").addEventListener('click', e => {
     document.getElementById("help-button-div").hidden = false;
     document.getElementById("help-text").hidden = true;
 });
+
+// FILTER BUTTONS CONTROL
+document.getElementById('min-slider').setAttribute('value', min_minutes);
+document.getElementById('min-txt').setAttribute('value', min_minutes);
+document.getElementById('min-txt').addEventListener('input', e => {
+    min_minutes = e.target.value;
+    document.getElementById('min-slider').setAttribute('value', e.target.value);
+})
+document.getElementById('min-slider').addEventListener('input', e => {
+    min_minutes = e.target.value;
+    document.getElementById('min-txt').setAttribute('value', e.target.value);
+})
+document.getElementById('apply-filters').addEventListener('click', e => {
+    searchParams.set("mins", min_minutes);
+    createNewNetwork();
+})
+
 
 // Taken from Sigma examples
 // drag and drop
