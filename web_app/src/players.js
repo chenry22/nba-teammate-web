@@ -1,10 +1,30 @@
 import Sigma from "sigma";
 import Graph from "graphology";
-import forceAtlas2 from 'graphology-layout-forceatlas2';
 import FA2Layout from 'graphology-layout-forceatlas2/worker';
 
 import playerData from "./data/players.json";
-import lineupData from "./data/lineups/2024-25.json";
+import lineups25 from "./data/lineups/2024-25.json";
+import lineups24 from "./data/lineups/2023-24.json";
+import lineups23 from "./data/lineups/2022-23.json";
+import lineups22 from "./data/lineups/2021-22.json";
+import lineups21 from "./data/lineups/2020-21.json";
+import lineups20 from "./data/lineups/2019-20.json";
+import lineups19 from "./data/lineups/2018-19.json";
+import lineups18 from "./data/lineups/2017-18.json";
+import lineups17 from "./data/lineups/2016-17.json";
+import lineups16 from "./data/lineups/2015-16.json";
+import lineups15 from "./data/lineups/2014-15.json";
+import lineups14 from "./data/lineups/2013-14.json";
+import lineups13 from "./data/lineups/2012-13.json";
+import lineups12 from "./data/lineups/2011-12.json";
+import lineups11 from "./data/lineups/2010-11.json";
+import lineups10 from "./data/lineups/2009-10.json";
+import lineups09 from "./data/lineups/2008-09.json";
+import lineups08 from "./data/lineups/2007-08.json";
+
+const paramsString = window.location.search;
+const searchParams = new URLSearchParams(paramsString);
+const playerID = Number(searchParams.get('id'));
 
 const min_minutes = 20.0;
 const teams = {
@@ -24,48 +44,86 @@ const team_to_color = {
     "SAS" : "#c3c1c1e0", "TOR" : "#e42051e0", "UTA" : "#0d498de0", "CLE" : "#a10e4be0", "WAS" : "#8d146fe0",
     "CHA" : "#058fa8e0", "PHX" : "#fa844ee0", "BKN" : "#525252e0"
 }
+var names = {};
 
 const graph = new Graph({ multi: true });
-
-Object.keys(teams).forEach((key, _) => {
-    graph.addNode(key, { 
-        color : teams[key], size : 10, 
-        label: key,
-        x : Math.random(), y : Math.random() });
+graph.addNode(playerID, { 
+    label: playerID, size: 24,
+    x: Math.random(), y: Math.random()
 });
+
 playerData.forEach(n => {
-    if(n.year === "2024-25") {
+    if(n.id === playerID) {
+        graph.updateNode(playerID, attr => {
+            return { ...attr, label: n.player, color: teams[n.team] };
+        })
+
         var weighted_gp = ((Number(n.games_played) / 2.0) + Number(n.games_started)) / 100.0
-        if(!graph.hasNode(n.id)){
+        if(!graph.hasNode(n.team)) {
             var val = weighted_gp + Math.max(Number(n.win_shares), 1.0) / 2.8;
-            graph.addNode(n.id, { 
-                label: n.player, color: teams[n.team], 
-                size: Math.min(1 + val, 8),
+            graph.addNode(n.team, { 
+                label: n.team, color: teams[n.team], 
+                size: 10.0 + val,
                 x: Math.random(), y: Math.random()
             });
         }
+
         var team_val = 0.5 * weighted_gp * Math.max(Number(n.win_shares), 1.0) * Math.max(Number(n.box_plus_minus), 1.0);
         graph.addEdge(n.id, n.team, {
             color: team_to_color[n.team],
             size: Math.min(Math.max(team_val, 0.1), 5)
         });
+    } else {
+        names[n.id] = n.player;
     }
 });
-lineupData.forEach(e => {
-    if(Number(e.min) >= min_minutes && graph.hasNode(e.player1) && graph.hasNode(e.player2)){
+
+function addTeammate(e) {
+    if(Number(e.min) >= min_minutes && (Number(e.player1) === playerID || Number(e.player2) === playerID)){
+        var otherID = Number(e.player1) === playerID ? Number(e.player2) : Number(e.player1);
         var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 1500.0
+        if(!graph.hasNode(otherID)) {
+            graph.addNode(otherID, { 
+                label: names[otherID] ? names[otherID] : e.label, 
+                size: 4 + val, color: teams[e.team],
+                x: Math.random(), y: Math.random(), 
+            });
+        }
+
         graph.addEdge(e.player1, e.player2, { 
             color : team_to_color[e.team], 
             label : "GP: " + e.gp + ", GS: " + e.gs,
             size : Math.min(Math.max(val, 0.1), 3.5)
         });
+        graph.addEdge(otherID, e.team, { 
+            color : team_to_color[e.team],
+            size : 1.0
+        });
     }
-});
+}
+lineups25.forEach(e => addTeammate(e));
+lineups24.forEach(e => addTeammate(e));
+lineups23.forEach(e => addTeammate(e));
+lineups22.forEach(e => addTeammate(e));
+lineups21.forEach(e => addTeammate(e));
+lineups20.forEach(e => addTeammate(e));
+lineups19.forEach(e => addTeammate(e));
+lineups18.forEach(e => addTeammate(e));
+lineups17.forEach(e => addTeammate(e));
+lineups16.forEach(e => addTeammate(e));
+lineups15.forEach(e => addTeammate(e));
+lineups14.forEach(e => addTeammate(e));
+lineups13.forEach(e => addTeammate(e));
+lineups12.forEach(e => addTeammate(e));
+lineups11.forEach(e => addTeammate(e));
+lineups10.forEach(e => addTeammate(e));
+lineups09.forEach(e => addTeammate(e));
+lineups08.forEach(e => addTeammate(e));
 
 const settings = {
-    gravity: 1.1, strongGravityMode: true,
-    adjustSizes: true,
-    scalingRatio: 15, slowDown: 2.2
+    gravity: 2, adjustSizes: true,
+    edgeWeightInfluence: 1,
+    scalingRatio: 10, slowDown: 4
 };
 const layout = new FA2Layout(graph, { settings });
 layout.start();

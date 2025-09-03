@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NBA Player Teammate Web</title>
+  </head>
+  <body style="background: lightgrey; font-family:Verdana, Geneva, Tahoma, sans-serif">
+    <div id="container" style="width: 99vw; height: 96vh; background: white; margin: auto;"></div>
+    <script type="module" src="/src/players.js"></script>
+    <div style="position: absolute; bottom: 16px; left: 14px;">
+      <p style="font-size: 14px; color: rgb(80, 80, 80); opacity: 0.4;"><i>Created by <a href="https://linktr.ee/chenry22">@chenry22</a></i></p>
+    </div>
+    <div style="position: absolute; top: 16px; left: 14px;">
+        <button id="physics_toggler" style="font-size: medium; border-radius: 10px; border: 2px solid lightskyblue; padding: 6px 12px; background-color: rgb(199, 231, 251);">Toggle Physics (Enabled)</button>
+    </div>
+    <div style="position: absolute; top: 14px; right: 14px;">
+      <div id="help-button-div">
+        <button id="help-button" style="font-size: medium; border-radius: 100px; border: 2px solid lightskyblue; padding: 8px 14px; background-color: rgb(199, 231, 251);">?</button>
+      </div>
+      <div hidden id="help-text" style="border-radius: 4px; border: 2px solid lightskyblue; background-color: rgba(236, 248, 255, 0.945); box-shadow: 3px 3px rgba(128, 128, 128, 0.666); width: 56vw; font-size: 13px; position: relative;">
+        <p style="padding: 0 14px; text-align: center;"><i>The NBA's public two-man lineup data only goes back to 2008, so previous pairings are untracked.</i></p>
+        <button id="close-button" style="font-size: medium; border-radius: 100px; border: 2px solid lightskyblue; padding: 2px 8px; background-color: white; position: absolute; top: -7px; right: -7px;"><b>X</b></button>
+      </div>
+    </div>
+  </body>
+</html>
