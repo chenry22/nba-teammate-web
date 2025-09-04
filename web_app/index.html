@@ -14,13 +14,21 @@
     <div id="graph-controls">
       <a href="player_index">Visit Player Index</a>
       <button id="physics_toggler">Toggle Physics (Enabled)</button>
+      <div class="controls-div">
+        <div class="slider-div">
+          <label for="mins">Min. Minutes</label>
+          <input type="number" id="min-txt" min="1" max="3001" value="1" />
+          <input type="range" id="min-slider" name="mins" min="1" max="3001" step="100" value="1"/>
+        </div>
+        <button id="apply-filters">Apply Filters</button>
+      </div>
     </div>
     <div id="help-div">
       <div id="help-button-div">
         <button id="help-button">?</button>
       </div>
       <div hidden id="help-text">
-        <p><i>The size of each player node is a combination of games played/started and win shares. The width of an edge from a player to team is a measure of impact through games played/started, win shares, and average box plus-minus. The width of an edge between teammates is a measure of impact using minutes played together, win percentage, and effective net rating.</i></p>
+        <p><i>This is a network of all NBA players who played during the 2024-25 regular season. The size of each player node is a combination of games played/started and win shares. The width of an edge from a player to team is a measure of impact through games played/started, win shares, and average box plus-minus. The width of an edge between teammates is a measure of impact using minutes played together, win percentage, and effective net rating.</i></p>
         <button id="close-button"><b>X</b></button>
       </div>
     </div>

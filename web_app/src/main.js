@@ -6,7 +6,6 @@ import FA2Layout from 'graphology-layout-forceatlas2/worker';
 import playerData from "./data/players.json";
 import lineupData from "./data/lineups/2024-25.json";
 
-const min_minutes = 20.0;
 const teams = {
     "MIA" : "#98002e", "LAL" : "#552583", "BOS" : "#007a33", "LAC" : "#c8102e", "BRK" : "#000000",
     "CHO" : "#00788c", "CHI" : "#ce1141", "ATL" : "#e03a3e", "PHO" : "#e56020", "DAL" : "#00538c", 
@@ -26,41 +25,50 @@ const team_to_color = {
 }
 
 const graph = new Graph({ multi: true });
+var min_minutes = 20.0;
 
-Object.keys(teams).forEach((key, _) => {
-    graph.addNode(key, { 
-        color : teams[key], size : 10, 
-        label: key,
-        x : Math.random(), y : Math.random() });
-});
-playerData.forEach(n => {
-    if(n.year === "2024-25") {
-        var weighted_gp = ((Number(n.games_played) / 2.0) + Number(n.games_started)) / 100.0
-        if(!graph.hasNode(n.id)){
-            var val = weighted_gp + Math.max(Number(n.win_shares), 1.0) / 2.8;
-            graph.addNode(n.id, { 
-                label: n.player, color: teams[n.team], 
-                size: Math.min(1 + val, 8),
-                x: Math.random(), y: Math.random()
+function generateNetwork() {
+    graph.clear();
+    Object.keys(teams).forEach((key, _) => {
+        graph.addNode(key, { 
+            color : teams[key], size : 12, 
+            label: key,
+            x : Math.random(), y : Math.random() });
+    });
+    playerData.forEach(n => {
+        if(n.year === "2024-25" && Number(n.minutes_played) > min_minutes) {
+            var weighted_gp = ((Number(n.games_played) / 2.0) + Number(n.games_started)) / 120.0
+            var val = weighted_gp + Math.max(Number(n.win_shares), 0.5) / 2.7;
+            if(!graph.hasNode(n.id)){
+                graph.addNode(n.id, { 
+                    label: n.player, color: teams[n.team], 
+                    size: Math.min(1 + val, 9),
+                    x: Math.random(), y: Math.random()
+                });
+            } else {
+                graph.updateNode(n.id, attr => {
+                    return { ...attr, size: Math.min(attr.size + val, 9)}
+                });
+            }
+            var team_val = 0.5 * weighted_gp * Math.max(Number(n.win_shares), 1.0) * Math.max(Number(n.box_plus_minus), 1.0);
+            graph.addEdge(n.id, n.team, {
+                color: team_to_color[n.team],
+                size: Math.min(Math.max(team_val, 0.1), 5)
             });
         }
-        var team_val = 0.5 * weighted_gp * Math.max(Number(n.win_shares), 1.0) * Math.max(Number(n.box_plus_minus), 1.0);
-        graph.addEdge(n.id, n.team, {
-            color: team_to_color[n.team],
-            size: Math.min(Math.max(team_val, 0.1), 5)
-        });
-    }
-});
-lineupData.forEach(e => {
-    if(Number(e.min) >= min_minutes && graph.hasNode(e.player1) && graph.hasNode(e.player2)){
-        var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 1500.0
-        graph.addEdge(e.player1, e.player2, { 
-            color : team_to_color[e.team], 
-            label : "GP: " + e.gp + ", GS: " + e.gs,
-            size : Math.min(Math.max(val, 0.1), 3.5)
-        });
-    }
-});
+    });
+    lineupData.forEach(e => {
+        if(Number(e.min) >= min_minutes && graph.hasNode(e.player1) && graph.hasNode(e.player2)){
+            var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 1500.0
+            graph.addEdge(e.player1, e.player2, { 
+                color : team_to_color[e.team], 
+                label : "GP: " + e.gp + ", GS: " + e.gs,
+                size : Math.min(Math.max(val, 0.1), 3.5)
+            });
+        }
+    });
+}
+generateNetwork();
 
 const settings = {
     gravity: 1.1, strongGravityMode: true,
@@ -88,6 +96,25 @@ document.getElementById("close-button").addEventListener('click', e => {
     document.getElementById("help-button-div").hidden = false;
     document.getElementById("help-text").hidden = true;
 });
+
+// FILTER BUTTONS CONTROL
+document.getElementById('min-slider').setAttribute('value', min_minutes);
+document.getElementById('min-txt').setAttribute('value', min_minutes);
+document.getElementById('min-txt').addEventListener('input', e => {
+    min_minutes = e.target.value;
+    document.getElementById('min-slider').setAttribute('value', e.target.value);
+})
+document.getElementById('min-slider').addEventListener('input', e => {
+    min_minutes = e.target.value;
+    document.getElementById('min-txt').setAttribute('value', e.target.value);
+})
+document.getElementById('apply-filters').addEventListener('click', e => {
+    generateNetwork();
+    if(!layout.isRunning()) {
+        layout.start();
+        document.getElementById("physics_toggler").innerText = "Toggle Physics (Enabled)";
+    }
+})
 
 // Taken from Sigma examples
 // drag and drop
