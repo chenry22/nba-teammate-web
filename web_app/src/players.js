@@ -61,12 +61,13 @@ lineups.forEach(year => {
     });
 });
 playerData.forEach(p => { names[p.id] = p.player; });
+console.log(sumMinutes);
 
 const graph = new Graph({ multi: true });
 const settings = {
     gravity: 1.85, adjustSizes: true,
     edgeWeightInfluence: 0.5,
-    scalingRatio: 9, slowDown: 5
+    scalingRatio: 9, slowDown: 2
 };
 const layout = new FA2Layout(graph, { settings });
 layout.start();
@@ -80,25 +81,28 @@ function addOrUpdateTeammateNode(id, label, team, val) {
         });
     } else {
         graph.updateNode(id, attr => {
-            return { ...attr, size: Math.min(attr.size + val, 12) };
+            return { ...attr, size: Math.min((attr.size + val), 12) };
         });
     }
 }
 function addTeammate(e, show) {
     var otherID = Number(e.player1) === playerID ? Number(e.player2) : Number(e.player1);
-    if((show.has(Number(e.player1)) || show.has(Number(e.player2))) &&
-        (
-            (show.size === 1 && sumMinutes[Number(otherID)] >= min_minutes) ||
-            (show.size > 1 && e.min > min_minutes)
-        )
+    var eitherIsPlayer = Number(e.player1) === playerID || Number(e.player2) === playerID;
+    if((show.size === 1 && sumMinutes[Number(otherID)] >= min_minutes && (
+            show.has(Number(e.player1)) || show.has(Number(e.player2))
+        )) ||
+        (show.size > 1 && 
+            (eitherIsPlayer ? sumMinutes[otherID] > min_minutes : e.min > min_minutes) && 
+            (show.has(Number(e.player1)) || show.has(Number(e.player2))))
     ){
-        console.log(e);
         var team = e.team
         if(e.team === 'BKN'){ team = 'BRK'; }
         else if(e.team === 'CHO'){ team = 'CHA'; }
         else if(e.team === 'PHX'){ team = 'PHO'; }
 
-        var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 2500.0
+        var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 2500.0;
+        val /= Math.pow(depth, 2);
+
         if(show.size > 1){
             addOrUpdateTeammateNode(e.player1, e.label, team, val);
             addOrUpdateTeammateNode(e.player2, e.label, team, val);
@@ -157,7 +161,10 @@ function createNewNetwork() {
         var toAdd = new Set();
         lineups.forEach(pairings => {
             pairings.forEach(e => {
-                if(shown.has(Number(e.player1)) || shown.has(Number(e.player2)) && Number(e.min) > min_minutes){
+                var eitherIsPlayer = Number(e.player1) === playerID || Number(e.player2) === playerID;
+                if((shown.has(Number(e.player1)) || shown.has(Number(e.player2))) && 
+                    (eitherIsPlayer ? sumMinutes[Number(e.player1 === playerID ? e.player2 : e.player1)] > min_minutes : e.min > min_minutes)
+                ){
                     toAdd.add(Number(e.player1));
                     toAdd.add(Number(e.player2));
                 }
@@ -166,7 +173,6 @@ function createNewNetwork() {
         shown = shown.union(toAdd);
         i--;
     }
-    console.log(shown);
 
     playerData.forEach(n => {
         if(n.id === playerID) {
@@ -236,7 +242,13 @@ document.getElementById('min-slider').addEventListener('input', e => {
 document.getElementById('apply-filters').addEventListener('click', e => {
     searchParams.set("mins", min_minutes);
     searchParams.set("depth", depth);
-    createNewNetwork();
+    if(depth > 2 && min_minutes < (230 * depth)){
+        if(confirm("The parameters you have entered will likely generate MANY nodes and edges. Enough to potentially crash the site. Continue anyways? Your device may process the resulting network slowly")) {
+            createNewNetwork();
+        }
+    } else {
+        createNewNetwork();
+    }
 })
 // DEPTH
 document.getElementById('depth-slider').setAttribute('value', depth);
