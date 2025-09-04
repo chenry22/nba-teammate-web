@@ -61,7 +61,6 @@ lineups.forEach(year => {
     });
 });
 playerData.forEach(p => { names[p.id] = p.player; });
-console.log(sumMinutes);
 
 const graph = new Graph({ multi: true });
 const settings = {
@@ -73,6 +72,7 @@ const layout = new FA2Layout(graph, { settings });
 layout.start();
 
 function addOrUpdateTeammateNode(id, label, team, val) {
+    if(id === playerID) { return; }
     if(!graph.hasNode(id)) {
         graph.addNode(id, { 
             label: names[id] ? names[id] : label, 
@@ -97,19 +97,19 @@ function addTeammate(e, show) {
     ){
         var team = e.team
         if(e.team === 'BKN'){ team = 'BRK'; }
-        else if(e.team === 'CHO'){ team = 'CHA'; }
+        else if(e.team === 'CHA'){ team = 'CHO'; }
         else if(e.team === 'PHX'){ team = 'PHO'; }
 
         var val = Number(e.win_pct) * Number(e.min) * Math.max(Number(e.e_net_rating), 0.5) / 2500.0;
         val /= Math.pow(depth, 2);
 
         if(show.size > 1){
-            addOrUpdateTeammateNode(e.player1, e.label, team, val);
-            addOrUpdateTeammateNode(e.player2, e.label, team, val);
+            addOrUpdateTeammateNode(e.player1, e.label.split(" - ")[0], team, val);
+            addOrUpdateTeammateNode(e.player2, e.label.split(" - ")[1], team, val);
             if(!graph.hasNode(team)) {
                 graph.addNode(team, { 
-                    label: team, size: 5.0, color: teams[team],
-                    x: Math.random(), y: Math.random(), 
+                    label: team, size: 8.0, color: teams[team],
+                    x: Math.random(), y: Math.random(),
                 });
             }
             graph.addEdge(e.player1, team, { 
@@ -121,7 +121,8 @@ function addTeammate(e, show) {
                 size : Math.min(Math.max(val, 0.5), 4)
             });
         } else {
-            addOrUpdateTeammateNode(otherID, e.label, team, val);
+            var lbl = Number(e.player1) === playerID ? e.label.split(" - ")[1] : e.label.split(" - ")[0];
+            addOrUpdateTeammateNode(otherID, lbl, team, val);
             graph.addEdge(otherID, team, { 
                 color : team_to_color[team],
                 size : Math.min(Math.max(val, 0.5), 4)
@@ -151,7 +152,7 @@ function createNewNetwork() {
     }
 
     graph.addNode(playerID, { 
-        size: 26, highlighted: true,
+        size: 24, highlighted: true,
         x: Math.random(), y: Math.random()
     });
 
@@ -185,7 +186,7 @@ function createNewNetwork() {
             if(!graph.hasNode(n.team)) {
                 graph.addNode(n.team, { 
                     label: n.team, color: teams[n.team], 
-                    size: Math.min(4 + val, 20),
+                    size: Math.min(5 + val, 20), highlighted: true,
                     x: Math.random(), y: Math.random()
                 });
             } else {
@@ -242,7 +243,7 @@ document.getElementById('min-slider').addEventListener('input', e => {
 document.getElementById('apply-filters').addEventListener('click', e => {
     searchParams.set("mins", min_minutes);
     searchParams.set("depth", depth);
-    if(depth > 2 && min_minutes < (230 * depth)){
+    if(depth > 1 && min_minutes < (70 * Math.pow(depth, 2))){
         if(confirm("The parameters you have entered will likely generate MANY nodes and edges. Enough to potentially crash the site. Continue anyways? Your device may process the resulting network slowly")) {
             createNewNetwork();
         }
@@ -262,9 +263,12 @@ document.getElementById('depth-slider').addEventListener('input', e => {
 // drag and drop
 var draggedNode = null;
 var isDragging = false;
+var selectedNode = undefined;
+var prevHighlighted = false;
 renderer.on("downNode", (e) => {
     isDragging = true;
     draggedNode = e.node;
+    prevHighlighted = graph.getNodeAttribute(draggedNode, "highlighted");
     graph.setNodeAttribute(draggedNode, "highlighted", true);
     if (!renderer.getCustomBBox()) renderer.setCustomBBox(renderer.getBBox());
 });
@@ -282,7 +286,7 @@ renderer.on("moveBody", ({ event }) => {
 // On mouse up, we reset the dragging mode
 const handleUp = () => {
     if (draggedNode) {
-        graph.removeNodeAttribute(draggedNode, "highlighted");
+        graph.setNodeAttribute(draggedNode, "highlighted", prevHighlighted);
     }
     isDragging = false;
     draggedNode = null;
@@ -290,12 +294,16 @@ const handleUp = () => {
 renderer.on("upNode", handleUp);
 renderer.on("upStage", handleUp);
 
-
 // Allow click to select sub networks
-var selectedNode = undefined;
 renderer.on("clickNode", ({ node }) => {
     if(isDragging || draggedNode) { return; }
-    selectedNode = node === selectedNode ? undefined : node;
+    if(node === selectedNode) {
+        graph.setNodeAttribute(node, 'highlighted', prevHighlighted)
+        selectedNode = undefined;
+    } else {
+        selectedNode = node;
+        prevHighlighted = graph.getNodeAttribute(node, 'highlighted');
+    }
     renderer.refresh({ skipIndexation: true });
 });
 renderer.setSetting("nodeReducer", (node, data) => {
