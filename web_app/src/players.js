@@ -39,7 +39,8 @@ const teams = {
     "DEN" : "#fec524", "DET" : "#c8102e", "GSW" : "#ffc72c", "HOU" : "#ce1141", "IND" : "#fdbb30", 
     "MEM" : "#5d76a9", "MIL" : "#00471b", "MIN" : "#0c2340", "NOP" : "#85714d", "NYK" : "#f58426",
     "OKC" : "#007ac1", "ORL" : "#0077c0", "PHI" : "#006bb6", "POR" : "#e03a3e", "SAC" : "#5a2d81", 
-    "SAS" : "#a5a7a8ff", "TOR" : "#ce1141", "UTA" : "#002b5c", "CLE" : "#860038", "WAS" : "#002b5c",
+    "SAS" : "#a5a7a8", "TOR" : "#ce1141", "UTA" : "#002b5c", "CLE" : "#860038", "WAS" : "#002b5c",
+    "SEA" : "#4a974a", "NOH" : "#2cb2c9"
 };
 const team_to_color = {
     "MIA" : "#c10c42e0", "LAL" : "#6e399fe0", "BOS" : "#099a45e0", "LAC" : "#e82042e0", "BRK" : "#000000e0",
@@ -48,7 +49,7 @@ const team_to_color = {
     "MEM" : "#718cc1e0", "MIL" : "#00702be0", "MIN" : "#203d61e0", "NOP" : "#ab9265e0", "NYK" : "#fc943fe0",
     "OKC" : "#1290dae0", "ORL" : "#228dd0e0", "PHI" : "#1184d5e0", "POR" : "#f44a4ae0", "SAC" : "#7c48aae0", 
     "SAS" : "#c3c1c1e0", "TOR" : "#e42051e0", "UTA" : "#0d498de0", "CLE" : "#a10e4be0", "WAS" : "#8d146fe0",
-    "CHA" : "#058fa8e0", "PHX" : "#fa844ee0", "BKN" : "#525252e0"
+    "CHA" : "#058fa8e0", "PHX" : "#fa844ee0", "BKN" : "#525252e0", "NOH" : "#35c2dbe0", "SEA" : "#58b058e0"
 }
 var names = {};
 var sumMinutes = {};
@@ -186,12 +187,12 @@ function createNewNetwork() {
             if(!graph.hasNode(n.team)) {
                 graph.addNode(n.team, { 
                     label: n.team, color: teams[n.team], 
-                    size: Math.min(5 + val, 20), highlighted: true,
+                    size: Math.min(4 + val, 18), highlighted: true,
                     x: Math.random(), y: Math.random()
                 });
             } else {
                 graph.updateNode(n.team, attr => {
-                    return { ...attr, size: Math.min(attr.size + val, 20) };
+                    return { ...attr, size: Math.min(attr.size + val, 18) };
                 })
             }
 
